@@ -19,6 +19,6 @@ from sisdis1 import views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^hello/', views.hello),
-    url(r'^plus_one/(?P<val>\d+)', views.plus_one),
+    url(r'^api/hello', views.hello),
+    url(r'^api/plus_one/(?P<val>\d+)', views.plus_one),
 ]
