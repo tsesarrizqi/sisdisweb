@@ -13,8 +13,9 @@ def hello(req):
 		if 'request' in body:
 			request_string = body['request']
 			count = CountReq.objects.filter(string=request_string)
-			resp['response'] = request_string
-			resp['currentvisit'] = str(datetime.now())
+			resp2 = {"datetime": "2017-09-22T06:29:19.741889Z","state": "Morning"}
+			resp['response'] = "Good " + resp2['state'] + ", " + request_string
+			resp['currentvisit'] = resp2['datetime']
 			if len(count) > 0:
 				tmp = count[0].count+1
 				count[0].count = tmp
@@ -30,12 +31,25 @@ def hello(req):
 			resp['status'] = 400
 			resp['title'] = "Bad Request"
 		return JsonResponse(resp)
+	else:
+		resp = {}
+		resp['detail'] = "use POST instead of GET"
+		resp['status'] = 405
+		resp['title'] = "Method Not Allowed"
+		return JsonResponse(resp)
 
 def plus_one(req, val):
-	resp = {}
-	resp['apiversion'] = 2.0
-	resp['plusoneret'] = int(val)+1
-	return JsonResponse(resp)
+	if req.method == "GET":
+		resp = {}
+		resp['apiversion'] = 2.0
+		resp['plusoneret'] = int(val)+1
+		return JsonResponse(resp)
+	else:
+		resp = {}
+		resp['detail'] = "use GET instead of POST"
+		resp['status'] = 405
+		resp['title'] = "Method Not Allowed"
+		return JsonResponse(resp)
 
 def page_not_found(req):
 	resp = {}
@@ -45,9 +59,14 @@ def page_not_found(req):
 	return JsonResponse(resp)
 
 def spesifikasi(req):
-	file = open('spesifikasi.yaml', 'rb')
-	resp = HttpResponse(content=file)
-	resp['Content-Type'] = 'application/yaml'
-	return resp
-	# stream = open("spesifikasi.yaml", 'r')
-	# return HttpResponse(str(yaml.load(stream)))
+	if req.method == "GET":
+		file = open('spesifikasi.yaml')
+		resp = HttpResponse(file.read())
+		resp['Content-Type'] = 'text/x-yaml'
+		return resp
+	else:
+		resp = {}
+		resp['detail'] = "use GET instead of POST"
+		resp['status'] = 405
+		resp['title'] = "Method Not Allowed"
+		return JsonResponse(resp)
