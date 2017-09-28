@@ -17,8 +17,13 @@ from django.conf.urls import url
 from django.contrib import admin
 from sisdis1 import views
 
+handler404 = 'sisdis1.views.page_not_found'
+
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^api/hello', views.hello),
     url(r'^api/plus_one/(?P<val>\d+)', views.plus_one),
+    url(r'^api/spesifikasi.yaml', views.spesifikasi),
 ]
+
+handler404 = 'sisdis1.views.page_not_found'
