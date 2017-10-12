@@ -1,8 +1,8 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from datetime import datetime
-import yaml, json
-from .models import CountReq
+import yaml, json, requests
+from .models import CountReq, Nasabah
 
 # Create your views here.
 def hello(req):
@@ -13,9 +13,11 @@ def hello(req):
 		if 'request' in body:
 			request_string = body['request']
 			count = CountReq.objects.filter(string=request_string)
-			resp2 = {"datetime": "2017-09-22T06:29:19.741889Z","state": "Morning"}
-			resp['response'] = "Good " + resp2['state'] + ", " + request_string
-			resp['currentvisit'] = resp2['datetime']
+			resp_time = requests.get('http://172.17.0.70:17088')
+			body_time_unicode = resp_time.text
+			body_time = json.loads(body_time_unicode)
+			resp['response'] = "Good " + body_time['state'] + ", " + request_string
+			resp['currentvisit'] = body_time['datetime']
 			if len(count) > 0:
 				tmp = count[0].count+1
 				count[0].count = tmp
@@ -33,7 +35,7 @@ def hello(req):
 		return JsonResponse(resp)
 	else:
 		resp = {}
-		resp['detail'] = "use POST instead of GET"
+		resp['detail'] = "Method "+str(req.method)+" is not allowed"
 		resp['status'] = 405
 		resp['title'] = "Method Not Allowed"
 		return JsonResponse(resp)
@@ -46,7 +48,7 @@ def plus_one(req, val):
 		return JsonResponse(resp)
 	else:
 		resp = {}
-		resp['detail'] = "use GET instead of POST"
+		resp['detail'] = "Method "+str(req.method)+" is not allowed"
 		resp['status'] = 405
 		resp['title'] = "Method Not Allowed"
 		return JsonResponse(resp)
@@ -66,7 +68,91 @@ def spesifikasi(req):
 		return resp
 	else:
 		resp = {}
-		resp['detail'] = "use GET instead of POST"
+		resp['detail'] = "Method "+str(req.method)+" is not allowed"
 		resp['status'] = 405
 		resp['title'] = "Method Not Allowed"
 		return JsonResponse(resp)
+
+def quorum_terpenuhi():
+	# resp_cabang = requests.get('http://152.118.31.2/list.php')
+	# body_cabang_unicode = resp_cabang.text
+	# body_cabang = json.loads(body_cabang_unicode)
+	quorum = [{'ip':'172.17.0.49','npm':'1406543725'}]
+	count = 0
+	for cabang in quorum:
+		ip = cabang['ip']
+		resp_ping = requests.get('http://'+ip+'/ewallet/ping')
+		body_ping_unicode = resp_ping.text
+		body_ping = json.loads(body_ping_unicode)
+		if str(body_ping['pong']) == '1':
+			count += 1
+	return count >= 1
+
+def ping(req):
+	if req.method == "POST":
+		try:
+			resp = {}
+			resp['pong'] = 1
+			return JsonResponse(resp)
+		except:
+			resp = {}
+			resp['pong'] = -99
+			return JsonResponse(resp)
+	else:
+		resp = {}
+		resp['pong'] = -99
+		return JsonResponse(resp)
+
+def register(req):
+	if req.method == "POST":
+		try:
+			body_unicode = req.body.decode('utf-8')
+			body = json.loads(body_unicode)
+			resp = {}
+			user_id = body['user_id']
+			name = body['nama']
+			nasabah0 = Nasabah.objects.filter(user_id = user_id)
+			if len(nasabah0) == 0:
+				if quorum_terpenuhi():
+					nasabah = Nasabah(user_id = user_id, name = name, saldo = 0)
+					nasabah.save()
+					resp['status_register'] = 1
+				else:
+					resp['status_register'] = -2
+			else:
+				resp['status_register'] = -99
+			return JsonResponse(resp)
+		except:
+			resp = {}
+			resp['status_register'] = -4
+			return JsonResponse(resp)
+	else:
+		resp = {}
+		resp['status_register'] = -99
+		return JsonResponse(resp)
+
+def get_saldo(req):
+	if req.method == "POST":
+		try:
+			body_unicode = req.body.decode('utf-8')
+			body = json.loads(body_unicode)
+			resp = {}
+			user_id = body['user_id']
+			nasabah = Nasabah.objects.filter(user_id = user_id)
+			if len(nasabah) == 1:
+				if quorum_terpenuhi():
+					resp['nilai_saldo'] = nasabah[0].saldo
+				else:
+					resp['nilai_saldo'] = -2
+			else:
+				resp['nilai_saldo'] = -1
+			return JsonResponse(resp)
+		except:
+			resp = {}
+			resp['nilai_saldo'] = -4
+			return JsonResponse(resp)
+	else:
+		resp = {}
+		resp['status_register'] = -99
+		return JsonResponse(resp)
+

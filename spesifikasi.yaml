@@ -1,98 +1,62 @@
-swagger: '2.0'
+basePath: /api
+consumes: [application/json]
+definitions:
+  Plusoneret:
+    properties:
+      apiversion: {description: '', type: integer}
+      plusoneret: {description: '', type: integer}
+    required: [plusoneret, apiversion]
+    title: plusoneret
+    type: object
+  Request:
+    properties:
+      request: {description: '', type: string}
+    required: [request]
+    title: request
+    type: object
+  Response:
+    properties:
+      apiversion: {description: '', type: integer}
+      count: {description: '', type: integer}
+      currentvisit: {description: '', format: date-time, type: string}
+      response: {description: '', type: string}
+    required: [response, currentvisit, count, apiversion]
+    title: response
+    type: object
+host: 172.17.0.49:80
 info:
-  version: '2.0'
+  license: {name: GPL, url: 'https://www.gnu.org/licenses/gpl-3.0.en.html'}
   title: helloService
-  license:
-    name: GPL
-    url: 'https://www.gnu.org/licenses/gpl-3.0.en.html'
-host: "ALAMAT_BINDING_ANDA:PORT_ANDA"
-basePath: "/api"
-schemes:
-  - http
-consumes:
-  - application/json
-produces:
-  - application/json
+  version: '2.0'
 paths:
   /hello:
     post:
       description: Reflect anything user input
-      tags:
-        - a service
       operationId: app.hello_sv
-      produces:
-        - application/json
       parameters:
-        - name: body
-          in: body
-          required: true
-          description: ''
-          schema:
-            $ref: '#/definitions/Request'
+      - description: ''
+        in: body
+        name: body
+        required: true
+        schema: {$ref: '#/definitions/Request'}
+      produces: [application/json]
       responses:
         '200':
           description: ''
-          schema:
-            $ref: '#/definitions/Response'
           examples: {}
+          schema: {$ref: '#/definitions/Response'}
+      tags: [a service]
   /plus_one/{val}:
     get:
-      description: "Returns an incremented value"
+      description: Returns an incremented value
       operationId: app.plus_one
       parameters:
-      - name: "val"
-        in: "path"
-        description: "value that need to be incremented"
-        required: true
-        type: "integer"
-        format: "int32"
+      - {description: value that need to be incremented, format: int32, in: path,
+        name: val, required: true, type: integer}
       responses:
         200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/Plusoneret"
-definitions:
-  Request:
-    title: request
-    type: object
-    properties:
-      request:
-        description: ''
-        type: string
-    required:
-      - request
-  Response:
-    title: response
-    type: object
-    properties:
-      response:
-        description: ''
-        type: string
-      currentvisit:
-        description: ''
-        type: string
-        format: date-time
-      count:
-        description: ''
-        type: integer
-      apiversion:
-        description: ''
-        type: integer
-    required:
-      - response
-      - currentvisit
-      - count
-      - apiversion
-  Plusoneret:
-    title: plusoneret
-    type: object
-    properties:
-      plusoneret:
-        description: ''
-        type: integer
-      apiversion:
-        description: ''
-        type: integer
-    required:
-      - plusoneret
-      - apiversion
+          description: successful operation
+          schema: {$ref: '#/definitions/Plusoneret'}
+produces: [application/json]
+schemes: [http]
+swagger: '2.0'

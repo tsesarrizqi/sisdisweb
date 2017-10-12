@@ -24,6 +24,9 @@ urlpatterns = [
     url(r'^api/hello', views.hello),
     url(r'^api/plus_one/(?P<val>\d+)', views.plus_one),
     url(r'^api/spesifikasi.yaml', views.spesifikasi),
+    url(r'^ewallet/ping', views.ping),
+    url(r'^ewallet/register', views.register),
+    url(r'^ewallet/getSaldo', views.get_saldo),
 ]
 
 handler404 = 'sisdis1.views.page_not_found'
