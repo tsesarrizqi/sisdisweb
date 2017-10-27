@@ -97,6 +97,30 @@ def quorum_terpenuhi():
 	print(count)
 	return count >= 3
 
+def quorum_terpenuhi_all():
+	# resp_cabang = requests.get('http://152.118.31.2/list.php')
+	# body_cabang_unicode = resp_cabang.text
+	# body_cabang = json.loads(body_cabang_unicode)
+	quorum = [{"ip": "172.17.0.57","npm": "1406543574"},
+		{"ip": "172.17.0.17","npm": "1406579100"},
+		{"ip": "172.17.0.49","npm": "1406543725"},
+		{"ip": "172.17.0.58","npm": "1406527620"},
+		{"ip": "172.17.0.60","npm": "1406527513"},
+		{"ip": "172.17.0.63","npm": "1306398983"}]
+	count = 0
+	for cabang in quorum:
+		try:
+			ip = cabang['ip']
+			resp_ping = requests.post('http://'+ip+'/ewallet/ping')
+			body_ping_unicode = resp_ping.text
+			body_ping = json.loads(body_ping_unicode)
+			if str(body_ping['pong']) == '1':
+				count += 1
+		except:
+			count += 0
+	print(count)
+	return count >= 6
+
 def ping(req):
 	if req.method == "POST":
 		resp = {}
@@ -157,6 +181,80 @@ def get_saldo(req):
 			return JsonResponse(resp)
 	else:
 		resp = {}
-		resp['status_register'] = -99
+		resp['nilai_saldo'] = -99
 		return JsonResponse(resp)
 
+def get_total_saldo(req):
+	cabangs = [{"ip": "172.17.0.57","npm": "1406543574"},
+		{"ip": "172.17.0.17","npm": "1406579100"},
+		{"ip": "172.17.0.49","npm": "1406543725"},
+		{"ip": "172.17.0.58","npm": "1406527620"},
+		{"ip": "172.17.0.60","npm": "1406527513"},
+		{"ip": "172.17.0.63","npm": "1306398983"}]
+	try:
+		if quorum_terpenuhi_all():
+			body_unicode = req.body.decode('utf-8')
+			body = json.loads(body_unicode)
+			user_id = body['user_id']
+			nasabah = Nasabah.objects.filter(user_id = user_id)
+			total_saldo = 0
+			count_min1 = 0
+			if len(nasabah) == 1:
+				total = nasabah[0].saldo
+			else:
+				count_min1 = 1
+			kesalahan = False
+			for cabang in cabangs:
+				ip = cabang['ip']
+				# headers={'content-type':'application/json'},
+				body_post = {'user_id': user_id}
+				resp_saldo   = requests.post('http://'+ip+'/ewallet/getSaldo', data = body_post)
+				body_saldo_unicode = resp_saldo.text
+				body_saldo = json.loads(body_saldo_unicode)
+				saldo = int(body_saldo['nilai_saldo'])
+				if saldo > 0:
+					total_saldo += saldo
+				elif saldo < -1:
+					kesalahan = True
+				elif saldo == -1:
+					count_min1 += 1
+				if kesalahan:
+					break
+			resp = {}
+			if kesalahan:
+				resp['nilai_saldo'] = -3
+			elif count_min1 == (len(cabangs)+1):
+				resp['nilai_saldo'] = -1
+			else:
+				resp['nilai_saldo'] = total_saldo
+			return JsonResponse(resp)
+		else:
+			resp = {}
+			resp['nilai_saldo'] = -2
+			return JsonResponse(resp)
+	except:
+		resp = {}
+		resp['nilai_saldo'] = -99
+		return JsonResponse(resp)
+
+def transfer(req):
+	try:
+		body_unicode = req.body.decode('utf-8')
+		body = json.loads(body_unicode)
+		user_id = body['user_id']
+		user_id = body['nilai']
+		resp = {}
+		if int(nilai) < 0 or int(nilai) > 1000000000:
+			resp['status_transfer'] = -5
+			return JsonResponse(resp)
+		nasabah = Nasabah.objects.filter(user_id = user_id)
+		if len(nasabah) == 1:
+			if quorum_terpenuhi():
+				resp['status_transfer'] = nasabah[0].saldo
+			else:
+				resp['status_transfer'] = -2
+		else:
+	except:
+		resp = {}
+		resp['status_transfer'] = -99
+		return JsonResponse(resp)
