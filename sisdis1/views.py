@@ -77,17 +77,17 @@ def quorum_terpenuhi():
 	# resp_cabang = requests.get('http://152.118.31.2/list.php')
 	# body_cabang_unicode = resp_cabang.text
 	# body_cabang = json.loads(body_cabang_unicode)
-	quorum = [{"ip": "172.17.0.57","npm": "1406543574"},
-		{"ip": "172.17.0.17","npm": "1406579100"},
-		{"ip": "172.17.0.49","npm": "1406543725"},
-		{"ip": "172.17.0.58","npm": "1406527620"},
-		{"ip": "172.17.0.60","npm": "1406527513"},
-		{"ip": "172.17.0.63","npm": "1306398983"}]
+	quorum = [{"ip": "111.17.0.57","npm": "1406543574"},
+		{"ip": "111.17.0.17","npm": "1406579100"},
+		{"ip": "111.17.0.49","npm": "1406543725"},
+		{"ip": "111.17.0.58","npm": "1406527620"},
+		{"ip": "111.17.0.60","npm": "1406527513"},
+		{"ip": "111.17.0.63","npm": "1306398983"}]
 	count = 0
 	for cabang in quorum:
 		try:
 			ip = cabang['ip']
-			resp_ping = requests.post('http://'+ip+'/ewallet/ping')
+			resp_ping = requests.post('http://'+ip+'/ewallet/ping', timeout=1)
 			body_ping_unicode = resp_ping.text
 			body_ping = json.loads(body_ping_unicode)
 			if str(body_ping['pong']) == '1':
@@ -148,7 +148,7 @@ def register(req):
 				else:
 					resp['status_register'] = -2
 			else:
-				resp['status_register'] = -99
+				resp['status_register'] = -4
 			return JsonResponse(resp)
 		except:
 			resp = {}
