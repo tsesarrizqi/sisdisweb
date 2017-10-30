@@ -243,9 +243,9 @@ def get_total_saldo(req):
 						kesalahan = True
 					elif saldo == -1:
 						body_post_register = {'user_id': user_id, 'nama': 'Tsesar Rizqi Pradana'}
-						resp_register   = requests.post('http://'+ip_domisili+'/ewallet/getRegister', json = body_post_register)
-						body_register_unicode = resp_saldo.text
-						body_register = json.loads(body_saldo_unicode)
+						resp_register = requests.post('http://'+ip_domisili+'/ewallet/register', json = body_post_register)
+						body_register_unicode = resp_register.text
+						body_register = json.loads(body_register_unicode)
 						if str(body_register['status_register']) != '1':
 							kesalahan = True
 					if kesalahan:
