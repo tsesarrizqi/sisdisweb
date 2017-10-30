@@ -184,6 +184,12 @@ def get_saldo(req):
 		resp['nilai_saldo'] = -99
 		return JsonResponse(resp)
 
+def get_domisili(cabangs, user_id):
+	for cabang in cabangs:
+		if cabang['npm'] == user_id:
+			return cabang['ip']
+	return 0
+
 def get_total_saldo(req):
 	cabangs = [{"ip": "172.17.0.57","npm": "1406543574"},
 		{"ip": "172.17.0.17","npm": "1406579100"},
@@ -198,33 +204,55 @@ def get_total_saldo(req):
 			user_id = body['user_id']
 			nasabah = Nasabah.objects.filter(user_id = user_id)
 			total_saldo = 0
-			count_min1 = 0
-			if len(nasabah) == 1:
-				total = nasabah[0].saldo
+			if user_id == '1406543725':
+				if len(nasabah) == 1:
+					total = nasabah[0].saldo
+				else:
+					resp = {}
+					resp['nilai_saldo'] = -1
+					return JsonResponse(resp)
 			else:
-				count_min1 = 1
+				ip_domisili = get_domisili(cabangs, user_id)
+				if ip_domisili == 0:
+					resp = {}
+					resp['nilai_saldo'] = -99
+					return JsonResponse(resp)
+				else:
+					body_post = {'user_id': user_id}
+					resp_saldo   = requests.post('http://'+ip_domisili+'/ewallet/getTotalSaldo', json = body_post)
+					body_saldo_unicode = resp_saldo.text
+					body_saldo = json.loads(body_saldo_unicode)
+					total_saldo = int(body_saldo['nilai_saldo'])
+					resp = {}
+					resp['nilai_saldo'] = total_saldo
+					return JsonResponse(resp)
 			kesalahan = False
 			for cabang in cabangs:
 				ip = cabang['ip']
+				user_id = cabang['npm']
 				# headers={'content-type':'application/json'},
-				body_post = {'user_id': user_id}
-				resp_saldo   = requests.post('http://'+ip+'/ewallet/getSaldo', data = body_post)
-				body_saldo_unicode = resp_saldo.text
-				body_saldo = json.loads(body_saldo_unicode)
-				saldo = int(body_saldo['nilai_saldo'])
-				if saldo > 0:
-					total_saldo += saldo
-				elif saldo < -1:
-					kesalahan = True
-				elif saldo == -1:
-					count_min1 += 1
-				if kesalahan:
-					break
+				if npm != '1406543725':
+					body_get_saldo = {'user_id': user_id}
+					resp_saldo   = requests.post('http://'+ip+'/ewallet/getSaldo', json = body_get_saldo)
+					body_saldo_unicode = resp_saldo.text
+					body_saldo = json.loads(body_saldo_unicode)
+					saldo = int(body_saldo['nilai_saldo'])
+					if saldo >= 0:
+						total_saldo += saldo
+					elif saldo < -1:
+						kesalahan = True
+					elif saldo == -1:
+						body_post_register = {'user_id': user_id, 'nama': 'Tsesar Rizqi Pradana'}
+						resp_register   = requests.post('http://'+ip_domisili+'/ewallet/getRegister', json = body_post_register)
+						body_register_unicode = resp_saldo.text
+						body_register = json.loads(body_saldo_unicode)
+						if str(body_register['status_register']) != '1':
+							kesalahan = True
+					if kesalahan:
+						break
 			resp = {}
 			if kesalahan:
 				resp['nilai_saldo'] = -3
-			elif count_min1 == (len(cabangs)+1):
-				resp['nilai_saldo'] = -1
 			else:
 				resp['nilai_saldo'] = total_saldo
 			return JsonResponse(resp)
@@ -242,7 +270,7 @@ def transfer(req):
 		body_unicode = req.body.decode('utf-8')
 		body = json.loads(body_unicode)
 		user_id = body['user_id']
-		user_id = body['nilai']
+		nilai = body['nilai']
 		resp = {}
 		if int(nilai) < 0 or int(nilai) > 1000000000:
 			resp['status_transfer'] = -5
@@ -250,10 +278,18 @@ def transfer(req):
 		nasabah = Nasabah.objects.filter(user_id = user_id)
 		if len(nasabah) == 1:
 			if quorum_terpenuhi():
-				resp['status_transfer'] = nasabah[0].saldo
+				try:
+					nasabah[0].saldo += nilai
+					resp['status_transfer'] = 1
+					return JsonResponse(resp)
+				except:
+					resp['status_transfer'] = -4
+					return JsonResponse(resp)
 			else:
 				resp['status_transfer'] = -2
 		else:
+			resp['status_transfer'] = -1
+		return JsonResponse(resp)
 	except:
 		resp = {}
 		resp['status_transfer'] = -99
