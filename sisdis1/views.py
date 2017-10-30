@@ -249,12 +249,11 @@ def get_total_saldo(req):
 						if str(body_register['status_register']) != '1':
 							kesalahan = True
 					if kesalahan:
-						break
+						resp = {}
+						resp['nilai_saldo'] = -3
+						return JsonResponse(resp)
 			resp = {}
-			if kesalahan:
-				resp['nilai_saldo'] = -3
-			else:
-				resp['nilai_saldo'] = total_saldo
+			resp['nilai_saldo'] = total_saldo
 			return JsonResponse(resp)
 		else:
 			resp = {}
