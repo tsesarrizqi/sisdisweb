@@ -295,12 +295,17 @@ def transfer(req):
 		resp['status_transfer'] = -99
 		return JsonResponse(resp)
 
-def doTransfer(req):
-	body_unicode = req.body.decode('utf-8')
-	body = json.loads(body_unicode)
-	user_id = body['user_id']
-	ip_tujuan = body['ip_tujuan']
-	jumlah_transfer = body['jumlah_transfer']
+
+#############################################
+#############################################
+#############################################
+
+def do_transfer(user_id, ip_tujuan, jumlah_transfer):
+	# body_unicode = req.body.decode('utf-8')
+	# body = json.loads(body_unicode)
+	# user_id = body['user_id']
+	# ip_tujuan = body['ip_tujuan']
+	# jumlah_transfer = body['jumlah_transfer']
 
 	nasabah = Nasabah.objects.filter(user_id = user_id)
 	if len(nasabah) == 0:
@@ -338,5 +343,65 @@ def doTransfer(req):
 		resp['response'] = 'Terjadi kesalahan. Transfer sejumlah '+str(jumlah_transfer)+' ke cabang '+str(ip_tujuan)+' gagal.'
 		return JsonResponse(resp)
 
+def do_register(user_id, nama, ip_tujuan):
+	body_post_register = {'user_id':user_id, 'nama':nama}
+	resp_register = requests.post('http://'+ip_tujuan+'/ewallet/register', json = body_post_register)
+	body_register_unicode = resp_register.text
+	body_register = json.loads(body_register_unicode)
+	resp = {}
+	if str(body_register['status_register']) == '1':
+		resp['response'] = 'Register berhasil.'
+	else:
+		resp['response'] = 'Terjadi kesalahan. Register gagal.'
+	return JsonResponse(resp)
+
+def do_get_saldo(user_id, ip_tujuan):
+	body_post_saldo = {'user_id':user_id}
+	resp_saldo = requests.post('http://'+ip_tujuan+'/ewallet/getSaldo', json = body_post_saldo)
+	body_saldo_unicode = resp_saldo.text
+	body_saldo = json.loads(body_saldo_unicode)
+	resp = {}
+	if str(body_saldo['nilai_saldo']) >= '0':
+		resp['response'] = 'Saldo anda pada cabang '+str(ip_tujuan)+' adalah '+ body_saldo['nilai_saldo']
+	else:
+		resp['response'] = 'Terjadi kesalahan. Gagal mengambil saldo.'
+	return JsonResponse(resp)
+
+def do_get_total_saldo(user_id, ip_tujuan):
+	body_post_saldo = {'user_id':user_id}
+	resp_saldo = requests.post('http://'+ip_tujuan+'/ewallet/getTotalSaldo', json = body_post_saldo)
+	body_saldo_unicode = resp_saldo.text
+	body_saldo = json.loads(body_saldo_unicode)
+	resp = {}
+	if str(body_saldo['nilai_saldo']) >= '0':
+		resp['response'] = 'Total saldo anda adalah '+ body_saldo['nilai_saldo']
+	else:
+		resp['response'] = 'Terjadi kesalahan. Gagal mengambil total saldo.'
+	return JsonResponse(resp)
+
 def gui(req):
+	if req.method == "POST":
+		resp = {}
+		command = req.POST.get('command', '')
+		if command == 'register':
+			user_id = req.POST.get('user_id', '')
+			ip_tujuan = req.POST.get('cabang', '')
+			nama = req.POST.get('nama', '')
+			return do_register(user_id,nama,ip_tujuan)
+		elif command == 'getsaldo':
+			user_id = req.POST.get('user_id', '')
+			ip_tujuan = req.POST.get('cabang', '')
+			return do_get_saldo(user_id,ip_tujuan)
+		elif command == 'gettotalsaldo':
+			user_id = req.POST.get('user_id', '')
+			ip_tujuan = req.POST.get('cabang', '')
+			return do_get_total_saldo(user_id,ip_tujuan)
+		elif command == 'transfer':
+			user_id = req.POST.get('user_id', '')
+			ip_tujuan = req.POST.get('cabang', '')
+			jumlah_transfer = req.POST.get('jumlah_transfer', '')
+			return do_transfer(user_id,ip_tujuan,jumlah_transfer)
+		else:
+			resp['response'] = 'Terdapat kesalahan.'
+		return JsonResponse(resp)
 	return render(req, 'gui.html',{})
