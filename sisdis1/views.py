@@ -95,7 +95,7 @@ def quorum_terpenuhi():
 		except:
 			count += 0
 	print(count)
-	return count >= 3
+	return count >= 4
 
 def quorum_terpenuhi_all():
 	# resp_cabang = requests.get('http://152.118.31.2/list.php')
@@ -111,7 +111,7 @@ def quorum_terpenuhi_all():
 	for cabang in quorum:
 		try:
 			ip = cabang['ip']
-			resp_ping = requests.post('http://'+ip+'/ewallet/ping')
+			resp_ping = requests.post('http://'+ip+'/ewallet/ping', timeout=1)
 			body_ping_unicode = resp_ping.text
 			body_ping = json.loads(body_ping_unicode)
 			if str(body_ping['pong']) == '1':
