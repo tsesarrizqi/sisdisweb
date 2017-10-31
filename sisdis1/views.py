@@ -339,4 +339,4 @@ def doTransfer(req):
 		return JsonResponse(resp)
 
 def gui(req):
-	return render(req, 'sisdis1/gui.html',{})
+	return render(req, 'gui.html',{})
