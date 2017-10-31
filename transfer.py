@@ -1,7 +1,7 @@
 import os, django, requests
 
-django.setup()
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "sisdisweb.settings")
+django.setup()
 
 from sisdis1.models import Nasabah
 

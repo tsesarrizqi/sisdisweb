@@ -30,6 +30,7 @@ urlpatterns = [
     url(r'^ewallet/getTotalSaldo', views.get_total_saldo),
     url(r'^ewallet/transfer', views.transfer),
     url(r'^ewallet/doTransfer', views.doTransfer),
+    url(r'^ewallet/gui', views.gui),
 ]
 
 handler404 = 'sisdis1.views.page_not_found'

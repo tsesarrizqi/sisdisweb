@@ -337,3 +337,6 @@ def doTransfer(req):
 		resp = {}
 		resp['response'] = 'Terjadi kesalahan. Transfer sejumlah '+str(jumlah_transfer)+' ke cabang '+str(ip_tujuan)+' gagal.'
 		return JsonResponse(resp)
+
+def gui(req):
+	return render(req, 'sisdis1/gui.html',{})
