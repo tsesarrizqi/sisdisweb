@@ -295,7 +295,7 @@ def transfer(req):
 		resp['status_transfer'] = -99
 		return JsonResponse(resp)
 
-def transfer_ke(req):
+def doTransfer(req):
 	body_unicode = req.body.decode('utf-8')
 	body = json.loads(body_unicode)
 	user_id = body['user_id']
@@ -308,7 +308,7 @@ def transfer_ke(req):
 		resp['response'] = 'User ID belum terdaftar di sistem ini.'
 		return JsonResponse(resp)
 	body_post_saldo = {'user_id':user_id}
-	resp_saldo = requests.post('http://'+ip_tujuan+'/ewallet/getSaldo', json = body_post)
+	resp_saldo = requests.post('http://'+ip_tujuan+'/ewallet/getSaldo', json = body_post_saldo)
 	body_saldo_unicode = resp_saldo.text
 	body_saldo = json.loads(body_saldo_unicode)
 	if str(body_saldo['nilai_saldo']) == '-1':
