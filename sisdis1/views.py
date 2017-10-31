@@ -97,7 +97,7 @@ def quorum_terpenuhi():
 		except:
 			count += 0
 	print(count)
-	return count >= 4
+	return count >= 5
 
 def quorum_terpenuhi_all():
 	# resp_cabang = requests.get('http://152.118.31.2/list.php')
@@ -123,7 +123,7 @@ def quorum_terpenuhi_all():
 		except:
 			count += 0
 	print(count)
-	return count >= 6
+	return count >= 8
 
 def ping(req):
 	if req.method == "POST":
