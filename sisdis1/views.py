@@ -279,6 +279,7 @@ def transfer(req):
 			if quorum_terpenuhi():
 				try:
 					nasabah[0].saldo += nilai
+					nasabah[0].save()
 					resp['status_transfer'] = 1
 					return JsonResponse(resp)
 				except:
@@ -326,8 +327,8 @@ def transfer_ke(req):
 		body_transfer = json.loads(body_transfer_unicode)
 		resp = {}
 		if str(body_transfer['status_transfer']) == '1':
-			nasabah.saldo = nasabah.saldo - jumlah_transfer
-			nasabah.save()
+			nasabah[0].saldo -= jumlah_transfer
+			nasabah[0].save()
 			resp['response'] = 'Transfer sejumlah '+str(jumlah_transfer)+' ke cabang '+str(ip_tujuan)+' berhasil.'
 		else:
 			resp['response'] = 'Transfer sejumlah '+str(jumlah_transfer)+' ke cabang '+str(ip_tujuan)+' gagal.'
