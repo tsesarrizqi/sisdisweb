@@ -303,9 +303,9 @@ def transfer_ke(req):
 
 	nasabah = Nasabah.objects.filter(user_id = user_id)
 	if len(nasabah) == 0:
-		print('User ID belum terdaftar di sistem ini.')
-		return
-
+		resp = {}
+		resp['response'] = 'User ID belum terdaftar di sistem ini.'
+		return JsonResponse(resp)
 	body_post_saldo = {'user_id':user_id}
 	resp_saldo = requests.post('http://'+ip_tujuan+'/ewallet/getSaldo', json = body_post)
 	body_saldo_unicode = resp_saldo.text
@@ -316,18 +316,23 @@ def transfer_ke(req):
 		body_register_unicode = resp_register.text
 		body_register = json.loads(body_register_unicode)
 		if str(body_register['status_register']) != '1':
-			print('Terjadi kesalahan. Transfer sejumlah ',jumlah_transfer,' ke cabang ',ip_tujuan,' gagal.')
-			return
+			resp = {}
+			resp['response'] = 'Terjadi kesalahan. Transfer sejumlah '+str(jumlah_transfer)+' ke cabang '+str(ip_tujuan)+' gagal.'
+			return JsonResponse(resp)
 	try:
 		body_post_transfer = {'user_id':user_id, 'nilai':jumlah_transfer}
 		resp_transfer = requests.post('http://'+ip_tujuan+'/ewallet/transfer', json = body_post_transfer)
 		body_transfer_unicode = resp_transfer.text
 		body_transfer = json.loads(body_transfer_unicode)
+		resp = {}
 		if str(body_transfer['status_transfer']) == '1':
 			nasabah.saldo = nasabah.saldo - jumlah_transfer
 			nasabah.save()
-			print('Transfer sejumlah ',jumlah_transfer,' ke cabang ',ip_tujuan,' berhasil.')
+			resp['response'] = 'Transfer sejumlah '+str(jumlah_transfer)+' ke cabang '+str(ip_tujuan)+' berhasil.'
 		else:
-			print('Transfer sejumlah ',jumlah_transfer,' ke cabang ',ip_tujuan,' gagal.')
+			resp['response'] = 'Transfer sejumlah '+str(jumlah_transfer)+' ke cabang '+str(ip_tujuan)+' gagal.'
+		return JsonResponse(resp)
 	except:
-		print('Terjadi kesalahan. Transfer sejumlah ',jumlah_transfer,' ke cabang ',ip_tujuan,' gagal.')
+		resp = {}
+		resp['response'] = 'Terjadi kesalahan. Transfer sejumlah '+str(jumlah_transfer)+' ke cabang '+str(ip_tujuan)+' gagal.'
+		return JsonResponse(resp)
