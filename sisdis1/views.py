@@ -73,18 +73,31 @@ def spesifikasi(req):
 		resp['title'] = "Method Not Allowed"
 		return JsonResponse(resp)
 
+def list_cabang():
+	npm = ["1406543574","1406579100","1406543725","1406527620","1406527513","1306398983","1406572025","1406543763"]
+	resp_cabang = requests.get('http://152.118.31.2/list.php')
+	body_cabang_unicode = resp_cabang.text
+	body_cabang = json.loads(body_cabang_unicode)
+	cabangs = []
+	for cabang in body_cabang:
+		if cabang['npm'] in npm:
+			cabangs.append(cabang)
+	return cabangs
+
 def quorum_terpenuhi():
 	# resp_cabang = requests.get('http://152.118.31.2/list.php')
 	# body_cabang_unicode = resp_cabang.text
 	# body_cabang = json.loads(body_cabang_unicode)
-	quorum = [{"ip": "172.17.0.57","npm": "1406543574"},
-		{"ip": "172.17.0.17","npm": "1406579100"},
-		{"ip": "172.17.0.49","npm": "1406543725"},
-		{"ip": "172.17.0.58","npm": "1406527620"},
-		{"ip": "172.17.0.60","npm": "1406527513"},
-		{"ip": "172.17.0.63","npm": "1306398983"},
-		{"ip": "172.17.0.26","npm": "1406572025"},
-		{"ip": "172.17.0.48","npm": "1406543763"}]
+	quorum = list_cabang()
+	print(quorum)
+	# quorum = [{"ip": "172.17.0.57","npm": "1406543574"},
+	# 	{"ip": "172.17.0.17","npm": "1406579100"},
+	# 	{"ip": "172.17.0.49","npm": "1406543725"},
+	# 	{"ip": "172.17.0.58","npm": "1406527620"},
+	# 	{"ip": "172.17.0.60","npm": "1406527513"},
+	# 	{"ip": "172.17.0.63","npm": "1306398983"},
+	# 	{"ip": "172.17.0.26","npm": "1406572025"},
+	# 	{"ip": "172.17.0.48","npm": "1406543763"}]
 	count = 0
 	for cabang in quorum:
 		try:
@@ -103,14 +116,15 @@ def quorum_terpenuhi_all():
 	# resp_cabang = requests.get('http://152.118.31.2/list.php')
 	# body_cabang_unicode = resp_cabang.text
 	# body_cabang = json.loads(body_cabang_unicode)
-	quorum = [{"ip": "172.17.0.57","npm": "1406543574"},
-		{"ip": "172.17.0.17","npm": "1406579100"},
-		{"ip": "172.17.0.49","npm": "1406543725"},
-		{"ip": "172.17.0.58","npm": "1406527620"},
-		{"ip": "172.17.0.60","npm": "1406527513"},
-		{"ip": "172.17.0.63","npm": "1306398983"},
-		{"ip": "172.17.0.26","npm": "1406572025"},
-		{"ip": "172.17.0.48","npm": "1406543763"}]
+	quorum = list_cabang()
+	# [{"ip": "172.17.0.57","npm": "1406543574"},
+	# 	{"ip": "172.17.0.17","npm": "1406579100"},
+	# 	{"ip": "172.17.0.49","npm": "1406543725"},
+	# 	{"ip": "172.17.0.58","npm": "1406527620"},
+	# 	{"ip": "172.17.0.60","npm": "1406527513"},
+	# 	{"ip": "172.17.0.63","npm": "1306398983"},
+	# 	{"ip": "172.17.0.26","npm": "1406572025"},
+	# 	{"ip": "172.17.0.48","npm": "1406543763"}]
 	count = 0
 	for cabang in quorum:
 		try:
@@ -196,14 +210,15 @@ def get_domisili(cabangs, user_id):
 	return 0
 
 def get_total_saldo(req):
-	cabangs = [{"ip": "172.17.0.57","npm": "1406543574"},
-		{"ip": "172.17.0.17","npm": "1406579100"},
-		{"ip": "172.17.0.49","npm": "1406543725"},
-		{"ip": "172.17.0.58","npm": "1406527620"},
-		{"ip": "172.17.0.60","npm": "1406527513"},
-		{"ip": "172.17.0.63","npm": "1306398983"},
-		{"ip": "172.17.0.26","npm": "1406572025"},
-		{"ip": "172.17.0.48","npm": "1406543763"}]
+	cabangs = list_cabang()
+	# [{"ip": "172.17.0.57","npm": "1406543574"},
+	# 	{"ip": "172.17.0.17","npm": "1406579100"},
+	# 	{"ip": "172.17.0.49","npm": "1406543725"},
+	# 	{"ip": "172.17.0.58","npm": "1406527620"},
+	# 	{"ip": "172.17.0.60","npm": "1406527513"},
+	# 	{"ip": "172.17.0.63","npm": "1306398983"},
+	# 	{"ip": "172.17.0.26","npm": "1406572025"},
+	# 	{"ip": "172.17.0.48","npm": "1406543763"}]
 	print('masuk1')
 	try:
 		if quorum_terpenuhi_all():
