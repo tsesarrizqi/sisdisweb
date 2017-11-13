@@ -84,7 +84,7 @@ def quorum_terpenuhi():
 		{"ip": "172.17.0.60","npm": "1406527513"},
 		{"ip": "172.17.0.63","npm": "1306398983"},
 		{"ip": "172.17.0.26","npm": "1406572025"},
-		{"ip": "172.17.0.48","npm": "1306543763"}]
+		{"ip": "172.17.0.48","npm": "1406543763"}]
 	count = 0
 	for cabang in quorum:
 		try:
@@ -110,12 +110,13 @@ def quorum_terpenuhi_all():
 		{"ip": "172.17.0.60","npm": "1406527513"},
 		{"ip": "172.17.0.63","npm": "1306398983"},
 		{"ip": "172.17.0.26","npm": "1406572025"},
-		{"ip": "172.17.0.48","npm": "1306543763"}]
+		{"ip": "172.17.0.48","npm": "1406543763"}]
 	count = 0
 	for cabang in quorum:
 		try:
 			ip = cabang['ip']
 			resp_ping = requests.post('http://'+ip+'/ewallet/ping', timeout=1)
+			print(ip,' ',resp_ping)
 			body_ping_unicode = resp_ping.text
 			body_ping = json.loads(body_ping_unicode)
 			if str(body_ping['pong']) == '1':
@@ -202,7 +203,7 @@ def get_total_saldo(req):
 		{"ip": "172.17.0.60","npm": "1406527513"},
 		{"ip": "172.17.0.63","npm": "1306398983"},
 		{"ip": "172.17.0.26","npm": "1406572025"},
-		{"ip": "172.17.0.48","npm": "1306543763"}]
+		{"ip": "172.17.0.48","npm": "1406543763"}]
 	print('masuk1')
 	try:
 		if quorum_terpenuhi_all():
@@ -212,14 +213,13 @@ def get_total_saldo(req):
 			nasabah = Nasabah.objects.filter(user_id = user_id)
 			total_saldo = 0
 			if user_id == '1406543725':
-				if len(nasabah) == 1:
-					total = nasabah[0].saldo
-				else:
+				if len(nasabah) < 1:
 					resp = {}
 					resp['nilai_saldo'] = -1
 					return JsonResponse(resp)
 			else:
 				ip_domisili = get_domisili(cabangs, user_id)
+				print(ip_domisili)
 				if ip_domisili == 0:
 					resp = {}
 					resp['nilai_saldo'] = -99
@@ -239,7 +239,7 @@ def get_total_saldo(req):
 				ip = cabang['ip']
 				user_id = cabang['npm']
 				# headers={'content-type':'application/json'},
-				if user_id != '1406543725':
+				if True:
 					body_get_saldo = {'user_id': '1406543725'}
 					resp_saldo = requests.post('http://'+ip+'/ewallet/getSaldo', json = body_get_saldo)
 					body_saldo_unicode = resp_saldo.text
@@ -320,25 +320,24 @@ def do_transfer(user_id, ip_tujuan, jumlah_transfer):
 	nasabah = Nasabah.objects.filter(user_id = user_id)
 	if len(nasabah) == 0:
 		resp = {}
-		resp['response'] = 'User ID belum terdaftar di sistem ini.'
+		resp['status_transfer'] = -1
 		return JsonResponse(resp)
 	if nasabah[0].saldo < int(jumlah_transfer):
 		resp = {}
-		resp['response'] = 'Saldo tidak mencukupi.'
+		resp['status_transfer'] = -5
 		return JsonResponse(resp)
 	body_post_saldo = {'user_id':user_id}
 	resp_saldo = requests.post('http://'+ip_tujuan+'/ewallet/getSaldo', json = body_post_saldo)
 	body_saldo_unicode = resp_saldo.text
 	body_saldo = json.loads(body_saldo_unicode)
 	if str(body_saldo['nilai_saldo']) == '-1':
-		body_post_register = {'user_id':user_id, 'nama':nasabah[0].nama}
-		resp_register = requests.post('http://'+ip_tujuan+'/ewallet/resgiter', json = body_post_register)
+		body_post_register = {'user_id':user_id, 'nama':nasabah[0].name}
+		resp_register = requests.post('http://'+ip_tujuan+'/ewallet/register', json = body_post_register)
 		body_register_unicode = resp_register.text
 		body_register = json.loads(body_register_unicode)
 		if str(body_register['status_register']) != '1':
 			resp = {}
-			resp['response'] = 'Transfer gagal karena gagal register. Transfer sejumlah '+str(jumlah_transfer)+' ke cabang '+str(ip_tujuan)+' gagal.'
-			resp['status_register'] = body_register['status_register']
+			resp['status_transfer'] = -99
 			return JsonResponse(resp)
 	try:
 		body_post_transfer = {'user_id':user_id, 'nilai':int(jumlah_transfer)}
@@ -349,15 +348,11 @@ def do_transfer(user_id, ip_tujuan, jumlah_transfer):
 		if str(body_transfer['status_transfer']) == '1':
 			nasabah[0].saldo = nasabah[0].saldo - int(jumlah_transfer)
 			nasabah[0].save()
-			resp['response'] = 'Transfer sejumlah '+str(jumlah_transfer)+' ke cabang '+str(ip_tujuan)+' berhasil.'
-			resp['status_transfer'] = body_transfer['status_transfer']
-		else:
-			resp['response'] = 'Transfer sejumlah '+str(jumlah_transfer)+' ke cabang '+str(ip_tujuan)+' gagal.'
-			resp['status_transfer'] = body_transfer['status_transfer']
+		resp['status_transfer'] = body_transfer['status_transfer']
 		return JsonResponse(resp)
 	except:
 		resp = {}
-		resp['response'] = 'Terjadi kesalahan pada sistem. Transfer sejumlah '+str(jumlah_transfer)+' ke cabang '+str(ip_tujuan)+' gagal.'
+		resp['status_transfer'] = -99
 		return JsonResponse(resp)
 
 def do_register(user_id, nama, ip_tujuan):
@@ -366,12 +361,7 @@ def do_register(user_id, nama, ip_tujuan):
 	body_register_unicode = resp_register.text
 	body_register = json.loads(body_register_unicode)
 	resp = {}
-	if str(body_register['status_register']) == '1':
-		resp['response'] = 'Register berhasil.'
-		resp['status_register'] = body_register['status_register']
-	else:
-		resp['response'] = 'Register gagal.'
-		resp['status_register'] = body_register['status_register']
+	resp['status_register'] = body_register['status_register']
 	return JsonResponse(resp)
 
 def do_get_saldo(user_id, ip_tujuan):
@@ -380,12 +370,7 @@ def do_get_saldo(user_id, ip_tujuan):
 	body_saldo_unicode = resp_saldo.text
 	body_saldo = json.loads(body_saldo_unicode)
 	resp = {}
-	if str(body_saldo['nilai_saldo']) >= '0':
-		resp['response'] = 'Saldo anda pada cabang '+str(ip_tujuan)+' adalah '+ str(body_saldo['nilai_saldo'])
-		resp['nilai_saldo'] = body_saldo['nilai_saldo']
-	else:
-		resp['response'] = 'Gagal mengambil saldo.'
-		resp['nilai_saldo'] = body_saldo['nilai_saldo']
+	resp['nilai_saldo'] = body_saldo['nilai_saldo']
 	return JsonResponse(resp)
 
 def do_get_total_saldo(user_id, ip_tujuan):
@@ -394,12 +379,7 @@ def do_get_total_saldo(user_id, ip_tujuan):
 	body_saldo_unicode = resp_saldo.text
 	body_saldo = json.loads(body_saldo_unicode)
 	resp = {}
-	if str(body_saldo['nilai_saldo']) >= '0':
-		resp['response'] = 'Total saldo anda adalah '+ str(body_saldo['nilai_saldo'])
-		resp['nilai_saldo'] = body_saldo['nilai_saldo']
-	else:
-		resp['response'] = 'Gagal mengambil total saldo.'
-		resp['nilai_saldo'] = body_saldo['nilai_saldo']
+	resp['nilai_saldo'] = body_saldo['nilai_saldo']
 	return JsonResponse(resp)
 
 def gui(req):

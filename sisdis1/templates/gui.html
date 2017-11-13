@@ -1,5 +1,5 @@
 <html>
-
+  <h2 align="center">Kantor Cabang 1406543725</h2>
   <form method="POST" class="form-horizontal"> {% csrf_token %}
   <fieldset>
 
@@ -25,13 +25,7 @@
   </div>
 
   <!-- Text input-->
-  <div class="form-group">
-    <label class="col-md-4 control-label" for="textinput">IP Cabang Tujuan</label>  
-    <div class="col-md-4">
-    <input id="cabang1" name="cabang" type="text" placeholder="" class="form-control input-md" required="">
-      
-    </div>
-  </div>
+    <input id="cabang1" type="hidden" name="cabang" type="text" placeholder="" class="form-control input-md" value="172.17.0.49" required="">
 
   <input type='hidden' name="command" value="register" />
 
@@ -62,13 +56,8 @@
   </div>
 
   <!-- Text input-->
-  <div class="form-group">
-    <label class="col-md-4 control-label" for="textinput">IP Cabang Tujuan</label>  
-    <div class="col-md-4">
-    <input id="cabang2" name="cabang" type="text" placeholder="" class="form-control input-md" required="">
-      
-    </div>
-  </div>
+  
+    <input id="cabang2" type="hidden" name="cabang" type="text" placeholder="" class="form-control input-md" value="172.17.0.49" required="">
 
   <input type='hidden' name="command" value="getsaldo" />
 
@@ -99,13 +88,7 @@
   </div>
 
   <!-- Text input-->
-  <div class="form-group">
-    <label class="col-md-4 control-label" for="textinput">IP Cabang Tujuan</label>  
-    <div class="col-md-4">
-    <input id="cabang3" name="cabang" type="text" placeholder="" class="form-control input-md" required="">
-      
-    </div>
-  </div>
+    <input id="cabang3" type="hidden" name="cabang" type="text" placeholder="" class="form-control input-md" value="172.17.0.49" required="">
 
   <input type='hidden' name="command" value="gettotalsaldo" />
 
