@@ -9,3 +9,7 @@ class Nasabah(models.Model):
 	user_id = models.CharField(max_length=10,primary_key=True)
 	name = models.CharField(max_length=255)
 	saldo = models.IntegerField()
+
+class Ping(models.Model):
+	npm = models.CharField(max_length=10)
+	date = models.DateTimeField()

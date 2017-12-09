@@ -74,7 +74,7 @@ def spesifikasi(req):
 		return JsonResponse(resp)
 
 def list_cabang():
-	npm = ["1406543574","1406579100","1406543725","1406527620","1406527513","1306398983","1406572025","1406543763"]
+	npm = ["1406543725","1406579100","1406543883","1406574831","1406543851"]
 	resp_cabang = requests.get('http://152.118.31.2/list.php')
 	body_cabang_unicode = resp_cabang.text
 	body_cabang = json.loads(body_cabang_unicode)
@@ -110,7 +110,7 @@ def quorum_terpenuhi():
 		except:
 			count += 0
 	print(count)
-	return count >= 5
+	return count >= 3
 
 def quorum_terpenuhi_all():
 	# resp_cabang = requests.get('http://152.118.31.2/list.php')
@@ -138,7 +138,7 @@ def quorum_terpenuhi_all():
 		except:
 			count += 0
 	print(count)
-	return count >= 8
+	return count >= 5
 
 def ping(req):
 	if req.method == "POST":
