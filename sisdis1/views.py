@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from datetime import datetime
 import yaml, json, requests
-from .models import CountReq, Nasabah
+from .models import CountReq, Nasabah, Ping
 
 # Create your views here.
 def hello(req):
@@ -211,14 +211,6 @@ def get_domisili(cabangs, user_id):
 
 def get_total_saldo(req):
 	cabangs = list_cabang()
-	# [{"ip": "172.17.0.57","npm": "1406543574"},
-	# 	{"ip": "172.17.0.17","npm": "1406579100"},
-	# 	{"ip": "172.17.0.49","npm": "1406543725"},
-	# 	{"ip": "172.17.0.58","npm": "1406527620"},
-	# 	{"ip": "172.17.0.60","npm": "1406527513"},
-	# 	{"ip": "172.17.0.63","npm": "1306398983"},
-	# 	{"ip": "172.17.0.26","npm": "1406572025"},
-	# 	{"ip": "172.17.0.48","npm": "1406543763"}]
 	print('masuk1')
 	try:
 		if quorum_terpenuhi_all():
@@ -325,7 +317,83 @@ def transfer(req):
 #############################################
 #############################################
 
-def do_transfer(user_id, ip_tujuan, jumlah_transfer):
+def do_get_saldo(recv_id,user_id):
+    credentials = pika.PlainCredentials('sisdis','sisdis')
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='172.17.0.3',credentials=credentials))
+    channel1 = connection.channel()
+    channel2 = connection.channel()
+    
+    result = channel2.queue_declare(exclusive=True)
+	queue_name = result.method.queue
+
+	channel2.queue_bind(exchange='EX_GET_SALDO', queue=queue_name, routing_key='RESP_1406543725')
+
+	message = '{"action":"get_saldo","user_id":"'+str(user_id)+'","sender_id":"1406543725","type":"request","ts":'+'"{:%Y-%m-%d %H:%M:%S}"'.format(datetime.datetime.now())+'}'
+    channel1.basic_publish(exchange='EX_GET_SALDO', routing_key='REQ_'+str(recv_id), body=message)
+    
+    while True:
+    	method_frame, header_frame, body = channel2.basic_get(queue=queue_name, no_ack=True)
+
+    	if not (method_frame == None):
+			try:
+				connection.close()
+		        body_dict = json.loads(body.decode())
+		        action = body_dict['action']
+		        tipe = body_dict['type']
+		        if str(action) == 'get_saldo' and str(tipe) == 'response':
+		            nilai = int(body_dict['nilai_saldo'])
+		            resp = {}
+					resp['nilai_saldo'] = nilai
+					return JsonResponse(resp)
+				resp = {}
+				resp['nilai_saldo'] = -99
+				return JsonResponse(resp)
+		    except:
+		        resp = {}
+				resp['nilai_saldo'] = -99
+				return JsonResponse(resp)
+
+def do_register(recv_id,user_id,nama):
+    credentials = pika.PlainCredentials('sisdis','sisdis')
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='172.17.0.3',credentials=credentials))
+    channel1 = connection.channel()
+    channel2 = connection.channel()
+    
+    result = channel2.queue_declare(exclusive=True)
+	queue_name = result.method.queue
+
+	channel2.queue_bind(exchange='EX_REGISTER', queue=queue_name, routing_key='RESP_1406543725')
+
+	message = '{"action":"register","user_id":"'+str(user_id)+'","nama":"'+str(nama)+'","sender_id":"1406543725","type":"request","ts":'+'"{:%Y-%m-%d %H:%M:%S}"'.format(datetime.datetime.now())+'}'
+    channel1.basic_publish(exchange='EX_REGISTER', routing_key='REQ_'+str(recv_id), body=message)
+    
+    while True:
+    	method_frame, header_frame, body = channel2.basic_get(queue=queue_name, no_ack=True)
+
+    	if not (method_frame == None):
+			try:
+				connection.close()
+		        body_dict = json.loads(body.decode())
+		        action = body_dict['action']	# body_unicode = req.body.decode('utf-8')
+	# body = json.loads(body_unicode)
+	# user_id = body['user_id']
+	# ip_tujuan = body['ip_tujuan']
+	# jumlah_transfer = body['jumlah_transfer']
+		        tipe = body_dict['type']
+		        if str(action) == 'register' and str(tipe) == 'response':
+		            status = int(body_dict['status_register'])
+		            resp = {}
+					resp['status_register'] = status
+					return JsonResponse(resp)
+				resp = {}
+				resp['status_register'] = -99
+				return JsonResponse(resp)
+		    except:
+		        resp = {}
+				resp['status_register'] = -99
+				return JsonResponse(resp)
+
+def do_transfer(user_id, npm_tujuan, jumlah_transfer):
 	# body_unicode = req.body.decode('utf-8')
 	# body = json.loads(body_unicode)
 	# user_id = body['user_id']
@@ -341,61 +409,112 @@ def do_transfer(user_id, ip_tujuan, jumlah_transfer):
 		resp = {}
 		resp['status_transfer'] = -5
 		return JsonResponse(resp)
-	body_post_saldo = {'user_id':user_id}
-	resp_saldo = requests.post('http://'+ip_tujuan+'/ewallet/getSaldo', json = body_post_saldo)
+	
+	resp_saldo = do_get_saldo(npm_tujuan,user_id)
 	body_saldo_unicode = resp_saldo.text
 	body_saldo = json.loads(body_saldo_unicode)
+	
 	if str(body_saldo['nilai_saldo']) == '-1':
-		body_post_register = {'user_id':user_id, 'nama':nasabah[0].name}
-		resp_register = requests.post('http://'+ip_tujuan+'/ewallet/register', json = body_post_register)
+		do_register(npm_tujuan,user_i,nasabah[0].name)
 		body_register_unicode = resp_register.text
 		body_register = json.loads(body_register_unicode)
 		if str(body_register['status_register']) != '1':
 			resp = {}
 			resp['status_transfer'] = -99
 			return JsonResponse(resp)
-	try:
-		body_post_transfer = {'user_id':user_id, 'nilai':int(jumlah_transfer)}
-		resp_transfer = requests.post('http://'+ip_tujuan+'/ewallet/transfer', json = body_post_transfer)
-		body_transfer_unicode = resp_transfer.text
-		body_transfer = json.loads(body_transfer_unicode)
-		resp = {}
-		if str(body_transfer['status_transfer']) == '1':
-			nasabah[0].saldo = nasabah[0].saldo - int(jumlah_transfer)
-			nasabah[0].save()
-		resp['status_transfer'] = body_transfer['status_transfer']
-		return JsonResponse(resp)
-	except:
-		resp = {}
-		resp['status_transfer'] = -99
-		return JsonResponse(resp)
+	
+	credentials = pika.PlainCredentials('sisdis','sisdis')
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='172.17.0.3',credentials=credentials))
+    channel1 = connection.channel()
+    channel2 = connection.channel()
+    
+    result = channel2.queue_declare(exclusive=True)
+	queue_name = result.method.queue
 
-def do_register(user_id, nama, ip_tujuan):
-	body_post_register = {'user_id':user_id, 'nama':nama}
-	resp_register = requests.post('http://'+ip_tujuan+'/ewallet/register', json = body_post_register)
-	body_register_unicode = resp_register.text
-	body_register = json.loads(body_register_unicode)
-	resp = {}
-	resp['status_register'] = body_register['status_register']
-	return JsonResponse(resp)
+	channel2.queue_bind(exchange='EX_TRANSFER', queue=queue_name, routing_key='RESP_1406543725')
 
-def do_get_saldo(user_id, ip_tujuan):
-	body_post_saldo = {'user_id':user_id}
-	resp_saldo = requests.post('http://'+ip_tujuan+'/ewallet/getSaldo', json = body_post_saldo)
-	body_saldo_unicode = resp_saldo.text
-	body_saldo = json.loads(body_saldo_unicode)
-	resp = {}
-	resp['nilai_saldo'] = body_saldo['nilai_saldo']
-	return JsonResponse(resp)
+	message = '{"action":"transfer","user_id":"'+str(user_id)+'","nilai":'+str(jumlah_transfer)+',"sender_id":"1406543725","type":"request","ts":'+'"{:%Y-%m-%d %H:%M:%S}"'.format(datetime.datetime.now())+'}'
+    channel1.basic_publish(exchange='EX_TRANSFER', routing_key='REQ_'+str(recv_id), body=message)
+    
+    while True:
+    	method_frame, header_frame, body = channel2.basic_get(queue=queue_name, no_ack=True)
 
-def do_get_total_saldo(user_id, ip_tujuan):
-	body_post_saldo = {'user_id':user_id}
-	resp_saldo = requests.post('http://'+ip_tujuan+'/ewallet/getTotalSaldo', json = body_post_saldo)
-	body_saldo_unicode = resp_saldo.text
-	body_saldo = json.loads(body_saldo_unicode)
-	resp = {}
-	resp['nilai_saldo'] = body_saldo['nilai_saldo']
-	return JsonResponse(resp)
+    	if not (method_frame == None):
+			try:
+				connection.close()
+		        body_dict = json.loads(body.decode())
+		        action = body_dict['action']
+		        tipe = body_dict['type']
+		        if str(action) == 'transfer' and str(tipe) == 'response':
+		            status = int(body_dict['status_transfer'])
+		            resp = {}
+					if str(status) == '1':
+						nasabah[0].saldo = nasabah[0].saldo - int(jumlah_transfer)
+						nasabah[0].save()
+					resp['status_transfer'] = status
+					return JsonResponse(resp)
+				resp = {}
+				resp['status_transfer'] = -99
+				return JsonResponse(resp)
+		    except:
+		        resp = {}
+				resp['status_transfer'] = -99
+				return JsonResponse(resp)
+
+# def do_register(user_id, nama, ip_tujuan):
+# 	body_post_register = {'user_id':user_id, 'nama':nama}
+# 	resp_register = requests.post('http://'+ip_tujuan+'/ewallet/register', json = body_post_register)
+# 	body_register_unicode = resp_register.text
+# 	body_register = json.loads(body_register_unicode)
+# 	resp = {}
+# 	resp['status_register'] = body_register['status_register']
+# 	return JsonResponse(resp)
+
+# def do_get_saldo(user_id, ip_tujuan):
+# 	body_post_saldo = {'user_id':user_id}
+# 	resp_saldo = requests.post('http://'+ip_tujuan+'/ewallet/getSaldo', json = body_post_saldo)
+# 	body_saldo_unicode = resp_saldo.text
+# 	body_saldo = json.loads(body_saldo_unicode)
+# 	resp = {}
+# 	resp['nilai_saldo'] = body_saldo['nilai_saldo']
+# 	return JsonResponse(resp)
+
+def do_get_total_saldo(recv_id,user_id):
+    credentials = pika.PlainCredentials('sisdis','sisdis')
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='172.17.0.3',credentials=credentials))
+    channel1 = connection.channel()
+    channel2 = connection.channel()
+    
+    result = channel2.queue_declare(exclusive=True)
+	queue_name = result.method.queue
+
+	channel2.queue_bind(exchange='EX_GET_TOTAL_SALDO', queue=queue_name, routing_key='RESP_1406543725')
+
+	message = '{"action":"get_total_saldo","user_id":"'+str(user_id)+'","sender_id":"1406543725","type":"request","ts":'+'"{:%Y-%m-%d %H:%M:%S}"'.format(datetime.datetime.now())+'}'
+    channel1.basic_publish(exchange='EX_GET_TOTAL_SALDO', routing_key='REQ_'+str(recv_id), body=message)
+    
+    while True:
+    	method_frame, header_frame, body = channel2.basic_get(queue=queue_name, no_ack=True)
+
+    	if not (method_frame == None):
+			try:
+				connection.close()
+		        body_dict = json.loads(body.decode())
+		        action = body_dict['action']
+		        tipe = body_dict['type']
+		        if str(action) == 'get_total_saldo' and str(tipe) == 'response':
+		            nilai = int(body_dict['nilai_saldo'])
+		            resp = {}
+					resp['nilai_saldo'] = nilai
+					return JsonResponse(resp)
+				resp = {}
+				resp['nilai_saldo'] = -99
+				return JsonResponse(resp)
+		    except:
+		        resp = {}
+				resp['nilai_saldo'] = -99
+				return JsonResponse(resp)
+
 
 def gui(req):
 	if req.method == "POST":
