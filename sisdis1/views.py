@@ -1,8 +1,9 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
-from datetime import datetime
+import datetime
 import yaml, json, requests
 from .models import CountReq, Nasabah, Ping
+import pika, sys, json, os, time
 
 # Create your views here.
 def hello(req):
@@ -393,7 +394,7 @@ def do_register(recv_id,user_id,nama):
                 resp['status_register'] = -99
                 return JsonResponse(resp)
 
-def do_transfer(user_id, npm_tujuan, jumlah_transfer):
+def do_transfer(user_id, recv_id, jumlah_transfer):
     # body_unicode = req.body.decode('utf-8')
     # body = json.loads(body_unicode)
     # user_id = body['user_id']
@@ -410,12 +411,12 @@ def do_transfer(user_id, npm_tujuan, jumlah_transfer):
         resp['status_transfer'] = -5
         return JsonResponse(resp)
     
-    resp_saldo = do_get_saldo(npm_tujuan,user_id)
+    resp_saldo = do_get_saldo(recv_id,user_id)
     body_saldo_unicode = resp_saldo.text
     body_saldo = json.loads(body_saldo_unicode)
     
     if str(body_saldo['nilai_saldo']) == '-1':
-        do_register(npm_tujuan,user_i,nasabah[0].name)
+        do_register(recv_id,user_id,nasabah[0].name)
         body_register_unicode = resp_register.text
         body_register = json.loads(body_register_unicode)
         if str(body_register['status_register']) != '1':
@@ -524,15 +525,15 @@ def gui(req):
             user_id = req.POST.get('user_id', '')
             ip_tujuan = req.POST.get('cabang', '')
             nama = req.POST.get('nama', '')
-            return do_register(user_id,nama,ip_tujuan)
+            return do_register(ip_tujuan,user_id,nama)
         elif command == 'getsaldo':
             user_id = req.POST.get('user_id', '')
             ip_tujuan = req.POST.get('cabang', '')
-            return do_get_saldo(user_id,ip_tujuan)
+            return do_get_saldo(ip_tujuan,user_id)
         elif command == 'gettotalsaldo':
             user_id = req.POST.get('user_id', '')
             ip_tujuan = req.POST.get('cabang', '')
-            return do_get_total_saldo(user_id,ip_tujuan)
+            return do_get_total_saldo(ip_tujuan,user_id)
         elif command == 'transfer':
             user_id = req.POST.get('user_id', '')
             ip_tujuan = req.POST.get('cabang', '')

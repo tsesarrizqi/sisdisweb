@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+[B#!/usr/bin/env python
 # consume_transfer
 import pika, sys, json, os, django, datetime, time
 
@@ -9,7 +9,7 @@ channel = connection.channel()
 result = channel.queue_declare(exclusive=True)
 queue_name = result.method.queue
 
-channel.queue_bind(exchange='EX_TRANSFER', queue=queue_name, routing_key='REQ_1406543725')
+channel.queue_bind(exchange='EX_TRANFER', queue=queue_name, routing_key='REQ_1406543725')
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "sisdisweb.settings")
 django.setup()
@@ -18,7 +18,7 @@ from sisdis1.models import Ping, Nasabah
 def quorum_terpenuhi():
     old_treshold = datetime.datetime.now() - datetime.timedelta(seconds = 10)
     npms = Ping.objects.filter(date__gte = old_treshold).values('npm').distinct()
-    return len(npms) >= 0
+    return len(npms) >= 5
 
 
 def publish_resp(sender_id,status_transfer):

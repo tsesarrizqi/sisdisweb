@@ -18,7 +18,7 @@ from sisdis1.models import Ping, Nasabah
 def quorum_terpenuhi():
     old_treshold = datetime.datetime.now() - datetime.timedelta(seconds = 10)
     npms = Ping.objects.filter(date__gte = old_treshold).values('npm').distinct()
-    return len(npms) >= 5
+    return len(npms) >= 0
 
 
 def publish_resp(sender_id,nilai_saldo):

@@ -18,7 +18,7 @@ from sisdis1.models import Ping, Nasabah
 def quorum_terpenuhi():
     old_treshold = datetime.datetime.now() - datetime.timedelta(seconds = 10)
     npms = Ping.objects.filter(date__gte = old_treshold).values('npm').distinct()
-    return len(npms) >= 5
+    return len(npms) >= 0
 
 
 def publish_resp(sender_id,status_register):
@@ -38,9 +38,9 @@ def callback(ch, method, properties, body):
         action = body_dict['action']
         tipe = body_dict['type']
         if str(action) == 'register' and str(tipe) == 'request':
-            try:
+           try:
                 user_id = str(body_dict['user_id'])
-                name = str(body_dict['user_id'])
+                name = str(body_dict['nama'])
                 sender_id = body_dict['sender_id']
                 ts = body_dict['ts']
                 nasabah0 = Nasabah.objects.filter(user_id = user_id)
@@ -55,7 +55,7 @@ def callback(ch, method, properties, body):
                     status_register = -4
                 publish_resp(sender_id, status_register)
                 return
-            except:
+           except:
                 resp = {}
                 status_register = -4
                 publish_resp(sender_id, status_register)

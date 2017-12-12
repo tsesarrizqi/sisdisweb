@@ -21,17 +21,14 @@ def callback(ch, method, properties, body):
         if str(action) == 'ping':
             npm = body_dict['npm']
             ts = body_dict['ts']
-            ping_list = Ping.objects.filter(npm=npm)
-            if len(ping_list) <= 0:
-                ping = Ping(npm = npm, date = ts)
-                ping.save()
-            else:
-                ping_list[0].ts = ts
-                ping_list[0].save()
+            ping1 = Ping(npm = npm, date = ts)
+            ping1.save()
+            old_treshold = datetime.datetime.now() - datetime.timedelta(seconds = 15)
+            old_msg = Ping.objects.filter(date__lte = old_treshold)
+            old_msg.delete()
     except:
         pass
 
 channel.basic_consume(callback, queue=queue_name, no_ack=True)
 
 channel.start_consuming()
-

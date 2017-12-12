@@ -11,5 +11,5 @@ class Nasabah(models.Model):
 	saldo = models.IntegerField()
 
 class Ping(models.Model):
-	npm = models.CharField(max_length=10)
+	npm = models.CharField(max_length=10,primary_key=True)
 	date = models.DateTimeField()

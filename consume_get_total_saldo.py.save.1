@@ -166,6 +166,7 @@ def do_get_total_saldo(recv_id,user_id):
 
 
 def callback(ch, method, properties, body):
+    cabangs = list_cabang()
     try:
         body_dict = json.loads(body.decode())
         action = body_dict['action']
@@ -182,19 +183,27 @@ def callback(ch, method, properties, body):
                         nilai_saldo = -1
                         publish_resp(sender_id, nilai_saldo)
                         return
+     
                     kesalahan = False
                     for cabang in cabangs:
                         ip = cabang['ip']
-                        user_id_tujuan = cabang['npm']
+                        user_id = cabang['npm']
                         if True:
-                            resp_saldo = do_get_saldo(user_id_tujuan,user_id)
+                            resp_saldo = do_get_saldo(user_id,'1406543725')
                             body_saldo_unicode = resp_saldo.text
                             body_saldo = json.loads(body_saldo_unicode)
                             saldo = int(body_saldo['nilai_saldo'])
+                            # print(ip,' ',saldo)
                             if saldo >= 0:
                                 total_saldo += saldo
                             elif saldo < -1:
                                 kesalahan = True
+                            elif saldo == -1:
+                                resp_register = do_register(user_id,'1406543725','Tsesar Rizqi Pradana')
+                                body_register_unicode = resp_register.text
+                                body_register = json.loads(body_register_unicode)
+                                if str(body_register['status_register']) != '1':
+                                    kesalahan = True
                             if kesalahan:
                                 nilai_saldo = -3
                                 publish_resp(sender_id, nilai_saldo)

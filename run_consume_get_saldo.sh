@@ -1,7 +1,7 @@
-#!/bin/bash
 while true
 do
 cd /root/sisdisweb/
-python3 publish.py
+python3 consume_get_saldo.py
 sleep 10s
 done
+
