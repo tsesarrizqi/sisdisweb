@@ -18,8 +18,8 @@ from sisdis1.models import Ping, Nasabah
 def quorum_terpenuhi():
     old_treshold = datetime.datetime.now() - datetime.timedelta(seconds = 10)
     npms = Ping.objects.filter(date__gte = old_treshold).values('npm').distinct()
-    return len(npms) >= 0
-
+#    return len(npms) >= len(Ping.objects.all())/2
+    return 1
 
 def publish_resp(sender_id,status_transfer):
     credentials = pika.PlainCredentials('sisdis','sisdis')
@@ -33,6 +33,7 @@ def publish_resp(sender_id,status_transfer):
 
 
 def callback(ch, method, properties, body):
+    print('masuk1')
     try:
         body_dict = json.loads(body.decode())
         action = body_dict['action']
@@ -52,8 +53,11 @@ def callback(ch, method, properties, body):
                 if len(nasabah) == 1:
                     if quorum_terpenuhi():
                         try:
-                            nasabah[0].saldo += int(nilai)
+                            print(nasabah[0].user_id,' ',user_id, ' ', nilai, ' ', nasabah[0].saldo)
+                            nasabah[0].saldo = nasabah[0].saldo + int(nilai)
                             nasabah[0].save()
+                            print(nasabah[0].saldo)
+                            print('masuk2')
                             status_transfer = 1
                             publish_resp(sender_id, status_transfer)
                             return

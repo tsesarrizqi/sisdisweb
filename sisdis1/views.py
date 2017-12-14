@@ -354,6 +354,42 @@ def do_get_saldo(recv_id,user_id):
                 resp['nilai_saldo'] = -99
                 return JsonResponse(resp)
 
+def do_get_saldo2(recv_id,user_id):
+    credentials = pika.PlainCredentials('sisdis','sisdis')
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='172.17.0.3',credentials=credentials))
+    channel1 = connection.channel()
+    channel2 = connection.channel()
+    
+    result = channel2.queue_declare(exclusive=True)
+    queue_name = result.method.queue
+
+    channel2.queue_bind(exchange='EX_GET_SALDO', queue=queue_name, routing_key='RESP_1406543725')
+
+    message = '{"action":"get_saldo","user_id":"'+str(user_id)+'","sender_id":"1406543725","type":"request","ts":'+'"{:%Y-%m-%d %H:%M:%S}"'.format(datetime.datetime.now())+'}'
+    channel1.basic_publish(exchange='EX_GET_SALDO', routing_key='REQ_'+str(recv_id), body=message)
+    
+    while True:
+        method_frame, header_frame, body = channel2.basic_get(queue=queue_name, no_ack=True)
+
+        if not (method_frame == None):
+            try:
+                connection.close()
+                body_dict = json.loads(body.decode())
+                action = body_dict['action']
+                tipe = body_dict['type']
+                if str(action) == 'get_saldo' and str(tipe) == 'response':
+                    nilai = int(body_dict['nilai_saldo'])
+                    resp = {}
+                    resp['nilai_saldo'] = nilai
+                    return resp
+                resp = {}
+                resp['nilai_saldo'] = -99
+                return resp
+            except:
+                resp = {}
+                resp['nilai_saldo'] = -99
+                return resp
+
 def do_register(recv_id,user_id,nama):
     credentials = pika.PlainCredentials('sisdis','sisdis')
     connection = pika.BlockingConnection(pika.ConnectionParameters(host='172.17.0.3',credentials=credentials))
@@ -375,12 +411,9 @@ def do_register(recv_id,user_id,nama):
             try:
                 connection.close()
                 body_dict = json.loads(body.decode())
-                action = body_dict['action']    # body_unicode = req.body.decode('utf-8')
-    # body = json.loads(body_unicode)
-    # user_id = body['user_id']
-    # ip_tujuan = body['ip_tujuan']
-    # jumlah_transfer = body['jumlah_transfer']
+                action = body_dict['action']
                 tipe = body_dict['type']
+                print(action, ' ', tipe)
                 if str(action) == 'register' and str(tipe) == 'response':
                     status = int(body_dict['status_register'])
                     resp = {}
@@ -393,6 +426,43 @@ def do_register(recv_id,user_id,nama):
                 resp = {}
                 resp['status_register'] = -99
                 return JsonResponse(resp)
+
+def do_register2(recv_id,user_id,nama):
+    credentials = pika.PlainCredentials('sisdis','sisdis')
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='172.17.0.3',credentials=credentials))
+    channel1 = connection.channel()
+    channel2 = connection.channel()
+    
+    result = channel2.queue_declare(exclusive=True)
+    queue_name = result.method.queue
+
+    channel2.queue_bind(exchange='EX_REGISTER', queue=queue_name, routing_key='RESP_1406543725')
+
+    message = '{"action":"register","user_id":"'+str(user_id)+'","nama":"'+str(nama)+'","sender_id":"1406543725","type":"request","ts":'+'"{:%Y-%m-%d %H:%M:%S}"'.format(datetime.datetime.now())+'}'
+    channel1.basic_publish(exchange='EX_REGISTER', routing_key='REQ_'+str(recv_id), body=message)
+    
+    while True:
+        method_frame, header_frame, body = channel2.basic_get(queue=queue_name, no_ack=True)
+
+        if not (method_frame == None):
+            try:
+                connection.close()
+                body_dict = json.loads(body.decode())
+                action = body_dict['action']
+                tipe = body_dict['type']
+                if str(action) == 'register' and str(tipe) == 'response':
+                    status = int(body_dict['status_register'])
+                    resp = {}
+                    resp['status_register'] = status
+                    return resp
+                resp = {}
+                resp['status_register'] = -99
+                return resp
+            except:
+                resp = {}
+                resp['status_register'] = -99
+                return resp
+
 
 def do_transfer(user_id, recv_id, jumlah_transfer):
     # body_unicode = req.body.decode('utf-8')
@@ -411,14 +481,12 @@ def do_transfer(user_id, recv_id, jumlah_transfer):
         resp['status_transfer'] = -5
         return JsonResponse(resp)
     
-    resp_saldo = do_get_saldo(recv_id,user_id)
-    body_saldo_unicode = resp_saldo.text
-    body_saldo = json.loads(body_saldo_unicode)
+    resp_saldo = do_get_saldo2(recv_id,user_id)
+    body_saldo = resp_saldo
     
     if str(body_saldo['nilai_saldo']) == '-1':
-        do_register(recv_id,user_id,nasabah[0].name)
-        body_register_unicode = resp_register.text
-        body_register = json.loads(body_register_unicode)
+        resp_register = do_register2(recv_id,user_id,nasabah[0].name)
+        body_register = resp_register
         if str(body_register['status_register']) != '1':
             resp = {}
             resp['status_transfer'] = -99
@@ -449,6 +517,7 @@ def do_transfer(user_id, recv_id, jumlah_transfer):
                 if str(action) == 'transfer' and str(tipe) == 'response':
                     status = int(body_dict['status_transfer'])
                     resp = {}
+                    print(nasabah[0].saldo, ' ', jumlah_transfer)
                     if str(status) == '1':
                         nasabah[0].saldo = nasabah[0].saldo - int(jumlah_transfer)
                         nasabah[0].save()
